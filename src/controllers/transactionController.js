@@ -1,14 +1,12 @@
-const { createConnection } = require('mysql2');
-
-db = require('../config/db');
+const db = require('../config/db');
 
 const transactionController = {
     // GET -- Listar todas as transações (com junção de categoria)
     getAll: async (req, res) => {
         try {
             const query = `
-                SELECT t.id, description, t.amount, t.type, c.name as category, t.created_at
-                FROM transaction t
+                SELECT t.id, t.description, t.amount, t.type, c.name as category, t.created_at
+                FROM transactions t
                 LEFT JOIN categories c ON t.category_id = c.id
                 ORDER BY t.created_at DESC
             `;
@@ -24,12 +22,12 @@ const transactionController = {
     create: async (req, res) => {
         const { description, amount, type, category_id } = req.body;
         if (!description || !amount || !type) {
-            return res.status(400).json({ error: 'Descrição, valor e tipo são campos obrigatorios'});
+            return res.status(400).json({ error: 'Descrição, valor e tipo são campos obrigatorios' });
             // 400 Bad Request
         }
         try {
             const query = `
-                INSERT INTO transaction (descrition, amout, type, category_id) VALUES (?, ?, ?, ?)
+                INSERT INTO transactions (description, amount, type, category_id) VALUES (?, ?, ?, ?)
             `;
             const [result] = await db.query(query, [description, amount, type, category_id || null]);
 
@@ -38,7 +36,7 @@ const transactionController = {
                 transactionId: result.insertId
             });
         } catch (error) {
-            res.status(500).json({ error: 'Erro ao criar trasação.', details: error.message});
+            res.status(500).json({ error: 'Erro ao criar transação.', details: error.message });
         }
     },
 
@@ -49,17 +47,17 @@ const transactionController = {
 
         try {
             const query = `
-                UPDATE transactions SET description = ?, amount = ?, category_id = ?, WHERE id = ?
+                UPDATE transactions SET description = ?, amount = ?, type = ?, category_id = ? WHERE id = ?
             `;
-            const [result] = await db.query(query[description, amount, type, category_id, id]);
+            const [result] = await db.query(query, [description, amount, type, category_id || null, id]);
 
             if (result.affectedRows === 0) {
-                return res.status(404).json({ error: 'Trasações não econtrada.'});
+                return res.status(404).json({ error: 'Transação não encontrada.' });
             }
 
-            res.status(200).json({ message: 'Transação atualizada com sucesso.'});
+            res.status(200).json({ message: 'Transação atualizada com sucesso.' });
         } catch (error) {
-            res.status(500).json({ error: 'Erro ao atualizar trasação.', details: error.message});
+            res.status(500).json({ error: 'Erro ao atualizar transação.', details: error.message });
         }
     },
 
@@ -67,16 +65,16 @@ const transactionController = {
         const { id } = req.params;
 
         try {
-            const query = 'DELETE FROM WHERE id = ?';
+            const query = 'DELETE FROM transactions WHERE id = ?';
             const [result] = await db.query(query, [id]);
 
             if (result.affectedRows === 0) {
-                return res.status(404).json({ error: 'Transação não econtrada.'});
+                return res.status(404).json({ error: 'Transação não encontrada.' });
             }
 
             res.status(204).send(); // 204 No Content (Deletado com sucesso, sem corpo na resposta)
         } catch (error) {
-            res.status(500).json({ error: 'Erro ao deletar transação.', details: error.message});
+            res.status(500).json({ error: 'Erro ao deletar transação.', details: error.message });
         }
     }
 };
